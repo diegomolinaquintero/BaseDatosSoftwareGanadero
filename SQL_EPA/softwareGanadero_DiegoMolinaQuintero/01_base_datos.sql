@@ -1,0 +1,126 @@
+CREATE DATABASE db_ganado;
+USE db_ganado;
+
+CREATE TABLE roles(
+    id INT NOT NULL AUTO_INCREMENT,
+    nombre VARCHAR(30) NOT NULL,
+    descripcion VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+);
+CREATE TABLE usuarios(
+    id INT NOT NULL AUTO_INCREMENT,
+    id_roles INT NOT NULL,
+    nombre VARCHAR(30) NOT NULL,
+    apellido VARCHAR(30) NOT NULL,
+    cedula INT NOT NULL,
+    password VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    FOREIGN KEY (id_roles) REFERENCES roles (id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE TABLE hierro(
+    id INT NOT NULL AUTO_INCREMENT,
+    nombre VARCHAR(30) NOT NULL,
+    descripcion VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+);
+CREATE TABLE fincas(
+    id INT NOT NULL AUTO_INCREMENT,
+    id_usuarios INT NOT NULL,
+    nombre VARCHAR(30) NOT NULL,
+    id_hierro INT NOT NULL,
+    ubicacion VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    FOREIGN KEY (id_usuarios) REFERENCES usuarios (id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (id_hierro) REFERENCES hierro (id) ON DELETE CASCADE ON UPDATE CASCADE
+
+);
+CREATE TABLE finalidad(
+    id INT NOT NULL AUTO_INCREMENT,
+    nombre VARCHAR(30) NOT NULL,
+    descripcion VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+);
+CREATE TABLE clasificacion(
+    id INT NOT NULL AUTO_INCREMENT,
+    nombre VARCHAR(30) NOT NULL,
+    descripcion VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+);
+CREATE TABLE tipoganado(
+    id INT NOT NULL AUTO_INCREMENT,
+    nombre VARCHAR(30) NOT NULL,
+    id_clasificacion INT NOT NULL,
+    descripcion VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    FOREIGN KEY (id_clasificacion) REFERENCES clasificacion (id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE TABLE ganado(
+    id INT NOT NULL AUTO_INCREMENT,
+    id_tipoganado INT NOT NULL,
+    id_fincas INT NOT NULL,
+    id_finalidad INT NOT NULL,
+    foto VARCHAR(300) NOT NULL,
+    sexo VARCHAR(70) NOT NULL,
+    peso INT NOT NULL,
+    raza VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    fechamuerte DATETIME NULL DEFAULT NULL,
+    valor FLOAT NOT NULL,
+    PRIMARY KEY (id),
+    FOREIGN KEY (id_tipoganado) REFERENCES tipoganado (id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (id_fincas) REFERENCES fincas (id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (id_finalidad) REFERENCES finalidad (id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE TABLE ventas(
+    id INT NOT NULL AUTO_INCREMENT,
+    id_ganado INT NOT NULL,
+    cantidad INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    FOREIGN KEY (id_ganado) REFERENCES ganado (id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE ganado_auditoria(
+    id INT NOT NULL AUTO_INCREMENT,
+    id_ganado INT NOT NULL,
+    id_fincas INT NOT NULL,
+    fecha_cambio_muerte TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    FOREIGN KEY (id_ganado) REFERENCES ganado (id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (id_fincas) REFERENCES fincas (id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- Trigger: con  el  fin  de  brindar  seguridad  a  tu  sistema,  y tener  una  auditoria, genera  un  trigger  que registre cuando  se  borre  un animal  o  se  traslade  a  otra finca.
+
+DELIMITER $$
+
+    CREATE TRIGGER ganado_auditoria
+    AFTER UPDATE
+    ON ganado FOR EACH ROW
+    BEGIN
+        IF OLD.id_fincas <> new.id_fincas  THEN
+            INSERT INTO ganado_auditoria(id_ganado,id_fincas) VALUES(id_ganado, new.id_fincas);
+        END IF;
+    END$$
+
+DELIMITER ;
+
